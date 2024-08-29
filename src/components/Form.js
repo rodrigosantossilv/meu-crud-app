@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, Button, Grid, InputAdornment, IconButton } from '@mui/material';
-import Swal from 'sweetalert2';  // Importando SweetAlert2
-import InputMask from 'react-input-mask';  // Importando react-input-mask
-import Visibility from '@mui/icons-material/Visibility'; // Importando ícone de visibilidade
-import VisibilityOff from '@mui/icons-material/VisibilityOff'; // Importando ícone de visibilidade off
+import Swal from 'sweetalert2';
+import InputMask from 'react-input-mask';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
   const [form, setForm] = useState({
@@ -21,12 +21,11 @@ const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
     telefone: false,
   });
 
-  const [showSenha, setShowSenha] = useState(false); // Controle de visibilidade da senha
-  const [showConfirmSenha, setShowConfirmSenha] = useState(false); // Controle de visibilidade da confirmação da senha
+  const [showSenha, setShowSenha] = useState(false);
+  const [showConfirmSenha, setShowConfirmSenha] = useState(false);
 
   useEffect(() => {
-    if (isEditing) {
-      // Preencher o formulário com os dados iniciais para edição
+    if (isEditing && initialData) {
       setForm({
         nome: initialData.nome || '',
         telefone: initialData.telefone || '',
@@ -58,108 +57,51 @@ const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const { nome, telefone, cpf, email, confirmEmail, senha, confirmSenha } = form;
 
-    if (form.email !== form.confirmEmail) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Emails não conferem',
-        text: 'O email e a confirmação de email não são iguais. Por favor, verifique.',
-      });
+    // Verificação de preenchimento
+    if (!nome || !telefone || !cpf || !email || !confirmEmail || !senha || !confirmSenha) {
+      Swal.fire({ icon: 'error', title: 'Erro', text: 'Todos os campos devem ser preenchidos.' });
       return;
     }
 
-    if (form.senha !== form.confirmSenha) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Senhas não conferem',
-        text: 'A senha e a confirmação de senha não são iguais. Por favor, verifique.',
-      });
+    // Verificação de telefone
+    if (telefone.replace(/[^\d]/g, '').length !== 11) {
+      Swal.fire({ icon: 'error', title: 'Erro no Telefone', text: 'O telefone deve conter 11 dígitos.' });
       return;
     }
 
-    if (errors.cpf || form.cpf.length !== 14) {
-      Swal.fire({
-        icon: 'error',
-        title: 'CPF inválido',
-        text: 'Por favor, preencha o CPF corretamente.',
-      });
+    // Verificação de email e senha
+    if (email !== confirmEmail) {
+      Swal.fire({ icon: 'error', title: 'Emails não conferem', text: 'Os emails devem ser iguais.' });
       return;
     }
 
-    if (errors.telefone) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Número de telefone inválido',
-        text: 'Por favor, preencha o telefone corretamente com 11 dígitos.',
-      });
+    if (senha !== confirmSenha) {
+      Swal.fire({ icon: 'error', title: 'Senhas não conferem', text: 'As senhas devem ser iguais.' });
       return;
     }
 
-    try {
-      onSubmit(form);
-      Swal.fire({
-        icon: 'success',
-        title: 'Sucesso!',
-        text: 'Usuário cadastrado com sucesso.',
+    if (cpf.length !== 14) {
+      Swal.fire({ icon: 'error', title: 'CPF inválido', text: 'Preencha o CPF corretamente.' });
+      return;
+    }
+
+    onSubmit(form);
+
+    if (!isEditing) {
+      setForm({
+        nome: '',
+        telefone: '',
+        cpf: '',
+        email: '',
+        confirmEmail: '',
+        senha: '',
+        confirmSenha: '',
       });
-      // Limpar campos após o envio bem-sucedido, se não estiver editando
-      if (!isEditing) {
-        setForm({
-          nome: '',
-          telefone: '',
-          cpf: '',
-          email: '',
-          confirmEmail: '',
-          senha: '',
-          confirmSenha: '',
-        });
-        setErrors({
-          cpf: false,
-          telefone: false,
-        });
-      }
-    } catch (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Erro',
-        text: `Ocorreu um erro: ${error.message}`,
-      });
+      setErrors({ cpf: false, telefone: false });
     }
   };
-
-  const handleDelete = () => {
-    Swal.fire({
-      title: 'Você tem certeza?',
-      text: "Essa ação não pode ser desfeita!",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Sim, excluir!',
-      cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        onDelete()
-          .then(() => {
-            Swal.fire(
-              'Excluído!',
-              'O usuário foi excluído com sucesso.',
-              'success'
-            );
-          })
-          .catch((error) => {
-            Swal.fire(
-              'Erro',
-              `Ocorreu um erro: ${error.message}`,
-              'error'
-            );
-          });
-      }
-    });
-  };
-
-  const handleClickShowSenha = () => setShowSenha(!showSenha);
-  const handleClickShowConfirmSenha = () => setShowConfirmSenha(!showConfirmSenha);
 
   return (
     <form onSubmit={handleSubmit}>
@@ -172,9 +114,9 @@ const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
             required
             value={form.nome}
             onChange={handleChange}
-            inputProps={{ minLength: 3, maxLength: 50 }}
           />
         </Grid>
+
         <Grid item xs={12}>
           <TextField
             name="telefone"
@@ -183,18 +125,13 @@ const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
             required
             value={form.telefone}
             onChange={handleChange}
-            inputProps={{ maxLength: 14 }}
-            placeholder="(XX) XXXXX-XXXX"
             error={errors.telefone}
             helperText={errors.telefone ? 'Telefone deve ter 11 dígitos' : ''}
           />
         </Grid>
+
         <Grid item xs={12}>
-          <InputMask
-            mask="999.999.999-99"
-            value={form.cpf}
-            onChange={handleChange}
-          >
+          <InputMask mask="999.999.999-99" value={form.cpf} onChange={handleChange}>
             {() => (
               <TextField
                 name="cpf"
@@ -207,30 +144,29 @@ const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
             )}
           </InputMask>
         </Grid>
+
         <Grid item xs={12}>
           <TextField
             name="email"
             label="Email"
             fullWidth
             required
-            type="email"
             value={form.email}
             onChange={handleChange}
-            inputProps={{ minLength: 5, maxLength: 50 }}
           />
         </Grid>
+
         <Grid item xs={12}>
           <TextField
             name="confirmEmail"
             label="Confirme o Email"
             fullWidth
             required
-            type="email"
             value={form.confirmEmail}
             onChange={handleChange}
-            inputProps={{ minLength: 5, maxLength: 50 }}
           />
         </Grid>
+
         <Grid item xs={12}>
           <TextField
             name="senha"
@@ -240,15 +176,10 @@ const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
             type={showSenha ? 'text' : 'password'}
             value={form.senha}
             onChange={handleChange}
-            inputProps={{ minLength: 6, maxLength: 20 }}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={handleClickShowSenha}
-                    edge="end"
-                  >
+                  <IconButton onClick={() => setShowSenha(!showSenha)}>
                     {showSenha ? <Visibility /> : <VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
@@ -256,6 +187,7 @@ const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
             }}
           />
         </Grid>
+
         <Grid item xs={12}>
           <TextField
             name="confirmSenha"
@@ -265,15 +197,10 @@ const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
             type={showConfirmSenha ? 'text' : 'password'}
             value={form.confirmSenha}
             onChange={handleChange}
-            inputProps={{ minLength: 6, maxLength: 20 }}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={handleClickShowConfirmSenha}
-                    edge="end"
-                  >
+                  <IconButton onClick={() => setShowConfirmSenha(!showConfirmSenha)}>
                     {showConfirmSenha ? <Visibility /> : <VisibilityOff />}
                   </IconButton>
                 </InputAdornment>
@@ -281,17 +208,13 @@ const Form = ({ onSubmit, initialData = {}, isEditing = false, onDelete }) => {
             }}
           />
         </Grid>
+
         <Grid item xs={12}>
-          <Button variant="contained" color="primary" type="submit">
+          <Button type="submit" variant="contained" color="primary">
             {isEditing ? 'Atualizar' : 'Salvar'}
           </Button>
           {isEditing && (
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={handleDelete}
-              style={{ marginLeft: '10px' }}
-            >
+            <Button variant="outlined" color="secondary" onClick={onDelete} style={{ marginLeft: '10px' }}>
               Excluir
             </Button>
           )}
